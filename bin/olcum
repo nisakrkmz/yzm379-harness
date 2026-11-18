@@ -1,0 +1,73 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Koşu ölçümü — bin/olcum
+# Claude Code'un `--output-format stream-json --verbose` loglarını okur ve
+# A/B raporu için sayıları çıkarır.
+#
+#   ruby bin/olcum kanit/a_kosusu/a_tur1.jsonl kanit/a_kosusu/a_tur2.jsonl
+#   ruby bin/olcum kanit/b_kosusu/b_tur1.jsonl
+#
+# Not: --resume ile devam eden oturumda `total_cost_usd` birikimlidir; bu
+# yüzden her çağrının kendi maliyeti `model_usage_since_last_result`tan alınır.
+# `usage` alanı ise çağrı başınadır.
+
+require "json"
+
+KANCA_IZI = "bin/kontrol BAŞARISIZ"
+
+def oku(yol)
+  satirlar = File.read(yol, mode: "rb").force_encoding("UTF-8")
+  satirlar = satirlar.encode("UTF-8", "UTF-16LE") if satirlar.start_with?("\xFF\xFE".b.force_encoding("UTF-8"))
+  satirlar.delete_prefix("﻿").scrub("?").lines
+end
+
+def olc(yol)
+  s = Hash.new(0)
+  araclar = Hash.new(0)
+  oku(yol).each do |satir|
+    s[:kanca_engeli] += satir.scan(KANCA_IZI).size
+    veri = JSON.parse(satir) rescue next
+    case veri["type"]
+    when "assistant"
+      Array(veri.dig("message", "content")).each do |p|
+        araclar[p["name"]] += 1 if p["type"] == "tool_use"
+      end
+    when "result"
+      u = veri["usage"] || {}
+      s[:insan_turu] += 1
+      s[:ajan_turu] += veri["num_turns"].to_i
+      s[:input] += u["input_tokens"].to_i
+      s[:cache_yazma] += u["cache_creation_input_tokens"].to_i
+      s[:cache_okuma] += u["cache_read_input_tokens"].to_i
+      s[:output] += u["output_tokens"].to_i
+      s[:sure_ms] += veri["duration_ms"].to_i
+      son = veri["model_usage_since_last_result"]
+      s[:maliyet] += son&.any? ? son.values.sum { _1["costUSD"].to_f } : veri["total_cost_usd"].to_f
+      s[:hata] += 1 if veri["is_error"]
+    end
+  end
+  [s, araclar]
+end
+
+abort "kullanım: ruby bin/olcum LOG.jsonl [LOG2.jsonl ...]" if ARGV.empty?
+
+toplam = Hash.new(0)
+toplam_arac = Hash.new(0)
+puts "| Log | İnsan turu | Ajan turu | Input | Cache yazma | Cache okuma | Output | Toplam token | Maliyet ($) | Süre (sn) | Kanca engeli | Araç çağrıları |"
+puts "|---|---|---|---|---|---|---|---|---|---|---|---|"
+satir = lambda do |ad, s, a|
+  token = s[:input] + s[:cache_yazma] + s[:cache_okuma] + s[:output]
+  arac = a.sort_by { -_2 }.map { "#{_1}×#{_2}" }.join(", ")
+  puts "| #{ad} | #{s[:insan_turu]} | #{s[:ajan_turu]} | #{s[:input]} | #{s[:cache_yazma]} | #{s[:cache_okuma]} | " \
+       "#{s[:output]} | #{token} | #{format('%.4f', s[:maliyet])} | #{format('%.1f', s[:sure_ms] / 1000.0)} | " \
+       "#{s[:kanca_engeli]} | #{arac} |"
+end
+
+ARGV.each do |yol|
+  s, a = olc(yol)
+  s.each { toplam[_1] += _2 }
+  a.each { toplam_arac[_1] += _2 }
+  satir.call(File.basename(yol), s, a)
+end
+satir.call("**TOPLAM**", toplam, toplam_arac) if ARGV.size > 1

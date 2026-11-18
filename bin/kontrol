@@ -1,0 +1,78 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Doğrulama kancası — bin/kontrol
+#
+#   Elle:      ruby bin/kontrol
+#   Otomatik:  .claude/settings.json içindeki PostToolUse hook'u, ajan her
+#              Edit/Write yaptığında bunu çalıştırır.
+#
+# Hata varsa raporu STDERR'e yazar ve 2 ile çıkar: Claude Code bu çıktıyı
+# doğrudan ajanın önüne koyar. Her şey yeşilse 0 ile çıkar.
+
+require "open3"
+require "rbconfig"
+
+Encoding.default_external = Encoding::UTF_8
+Encoding.default_internal = Encoding::UTF_8
+
+KOK = File.expand_path("..", __dir__)
+Dir.chdir(KOK)
+RUBY = RbConfig.ruby
+
+hatalar = []
+
+# 1) Sürüm
+surum = File.exist?(".ruby-version") ? File.read(".ruby-version").strip : ""
+hatalar << "[SÜRÜM] .ruby-version '3.4' olmalı, şu an: '#{surum}'" unless surum.start_with?("3.4")
+unless RUBY_VERSION.start_with?("3.4")
+  hatalar << "[SÜRÜM] Ruby 3.4 ile çalıştırılmalı, şu an: #{RUBY_VERSION}"
+end
+
+# 2) Sözdizimi
+(Dir["lib/**/*.rb"] + Dir["test/**/*.rb"]).sort.each do |dosya|
+  cikti, durum = Open3.capture2e(RUBY, "-c", dosya)
+  hatalar << "[SÖZDİZİMİ] #{dosya}\n#{cikti}" unless durum.success?
+end
+
+# 3) Yasak kalıplar (yalnızca lib/)
+STANDART = %w[Object Kernel BasicObject Integer Numeric Float String Symbol
+              Array Hash NilClass TrueClass FalseClass Range Comparable].join("|")
+YASAKLAR = {
+  /method_missing|respond_to_missing\?/ => "method_missing yasak; define_method kullan",
+  /\brefine\b/ => "refinement yasak",
+  /^\s*(class|module)\s+(#{STANDART})\b/ => "standart sınıf yeniden açılamaz (monkey patch)",
+  /\b(#{STANDART})\.(class_eval|class_exec|send|define_method|prepend|include)\b/ => "standart sınıfa dışarıdan metot eklenemez"
+}.freeze
+
+Dir["lib/**/*.rb"].sort.each do |dosya|
+  File.readlines(dosya, chomp: true, encoding: "UTF-8").each_with_index do |satir, i|
+    next if satir.strip.start_with?("#")
+
+    YASAKLAR.each do |kalip, neden|
+      hatalar << "[YASAK] #{dosya}:#{i + 1}: #{neden}\n    #{satir.strip}" if satir.match?(kalip)
+    end
+  end
+end
+
+# 4) Testler
+test_dosyasi = "test/ogrenci_test.rb"
+if File.exist?(test_dosyasi)
+  cikti, durum = Open3.capture2e(RUBY, "-Ilib", "-Itest", test_dosyasi)
+  cikti = cikti.dup.force_encoding(Encoding::UTF_8).scrub("?")
+  unless durum.success?
+    ozet = cikti.lines.reject { |l| l.match?(%r{^\s+(/|[A-Z]:[/\\])}) }.last(60).join
+    hatalar << "[TEST] Minitest kırmızı (#{test_dosyasi}):\n#{ozet}"
+  end
+else
+  hatalar << "[TEST] #{test_dosyasi} bulunamadı"
+end
+
+if hatalar.empty?
+  puts "bin/kontrol: tamam (sürüm, sözdizimi, yasaklar, testler yeşil)"
+  exit 0
+end
+
+warn "bin/kontrol BAŞARISIZ — AGENTS.md kurallarına göre düzeltmeden bitirme:"
+hatalar.each { |h| warn "- #{h}" }
+exit 2
