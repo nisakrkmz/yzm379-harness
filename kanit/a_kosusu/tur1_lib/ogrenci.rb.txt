@@ -1,0 +1,17 @@
+class Ogrenci
+  attr_reader :ad, :toplam_ders, :devamsiz_ders
+
+  def initialize(ad, toplam_ders, devamsiz_ders)
+    raise ArgumentError, "toplam ders saati pozitif olmalı" unless toplam_ders.positive?
+    raise ArgumentError, "devamsızlık 0 ile toplam arasında olmalı" unless (0..toplam_ders).cover?(devamsiz_ders)
+
+    @ad = ad
+    @toplam_ders = toplam_ders
+    @devamsiz_ders = devamsiz_ders
+  end
+
+  # Devamsızlık yüzdesi (0-100)
+  def devamsizlik_orani
+    devamsiz_ders * 100.0 / toplam_ders
+  end
+end

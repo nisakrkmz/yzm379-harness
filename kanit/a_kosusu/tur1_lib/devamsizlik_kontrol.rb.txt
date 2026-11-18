@@ -1,0 +1,32 @@
+require_relative "ogrenci"
+
+class DevamsizlikKontrol
+  LIMIT = 30.0 # yüzde
+
+  # Oran limiti AŞARSA (> %30) öğrenci devamsızlıktan kalır; tam %30 sınırda kabul edilir.
+  def self.sinir_asildi?(ogrenci, limit = LIMIT)
+    ogrenci.devamsizlik_orani > limit
+  end
+
+  def self.kontrol(ogrenciler, limit = LIMIT)
+    ogrenciler.map do |o|
+      { ad: o.ad, oran: o.devamsizlik_orani.round(1), kaldi: sinir_asildi?(o, limit) }
+    end
+  end
+
+  def self.rapor(ogrenciler, limit = LIMIT)
+    kontrol(ogrenciler, limit).each do |s|
+      durum = s[:kaldi] ? "DEVAMSIZLIKTAN KALDI" : "Geçti"
+      puts format("%-20s %%%-5.1f %s", s[:ad], s[:oran], durum)
+    end
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  ornek = [
+    Ogrenci.new("Ayşe", 40, 8),   # %20
+    Ogrenci.new("Mehmet", 40, 12), # %30 (sınırda)
+    Ogrenci.new("Zeynep", 40, 15)  # %37.5
+  ]
+  DevamsizlikKontrol.rapor(ornek)
+end

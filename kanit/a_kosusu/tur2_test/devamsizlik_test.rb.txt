@@ -1,0 +1,71 @@
+require "minitest/autorun"
+require_relative "../lib/devamsizlik_kontrol"
+
+class OgrenciTest < Minitest::Test
+  def test_varsayilan_durum_aktif
+    o = Ogrenci.new("Ayşe", 0)
+    assert o.aktif?
+    refute o.donduruldu?
+    refute o.mezun?
+  end
+
+  def test_durum_sorgulari
+    assert Ogrenci.new("A", 1, :donduruldu).donduruldu?
+    assert Ogrenci.new("A", 1, :mezun).mezun?
+  end
+
+  def test_gecersiz_durum
+    assert_raises(ArgumentError) { Ogrenci.new("A", 1, :bilinmiyor) }
+  end
+
+  def test_devamsizlik_sinirlari
+    assert_equal 0, Ogrenci.new("A", 0).devamsizlik
+    assert_equal 10, Ogrenci.new("A", 10).devamsizlik
+    assert_raises(ArgumentError) { Ogrenci.new("A", -1) }
+    assert_raises(ArgumentError) { Ogrenci.new("A", 11) }
+  end
+
+  def test_devamsizlik_tam_sayi_olmali
+    assert_raises(ArgumentError) { Ogrenci.new("A", 2.5) }
+    assert_raises(ArgumentError) { Ogrenci.new("A", "2") }
+    assert_raises(ArgumentError) { Ogrenci.new("A", nil) }
+  end
+end
+
+class DevamsizlikKontrolTest < Minitest::Test
+  def ogr(dev, durum = :aktif)
+    Ogrenci.new("Test", dev, durum)
+  end
+
+  def test_riskli_esigi
+    refute DevamsizlikKontrol.riskli?(ogr(2))
+    assert DevamsizlikKontrol.riskli?(ogr(3)) # tam %30 riskli
+    assert DevamsizlikKontrol.riskli?(ogr(4))
+    assert DevamsizlikKontrol.riskli?(ogr(10))
+  end
+
+  def test_kaldi_esigi
+    refute DevamsizlikKontrol.kaldi?(ogr(3))
+    assert DevamsizlikKontrol.kaldi?(ogr(4))
+    assert DevamsizlikKontrol.kaldi?(ogr(10))
+  end
+
+  def test_kaldi_ayni_zamanda_riskli
+    o = ogr(5)
+    assert DevamsizlikKontrol.kaldi?(o)
+    assert DevamsizlikKontrol.riskli?(o)
+  end
+
+  def test_onur_adayi
+    assert DevamsizlikKontrol.onur_adayi?(ogr(0))
+    refute DevamsizlikKontrol.onur_adayi?(ogr(1))
+    refute DevamsizlikKontrol.onur_adayi?(ogr(0, :donduruldu))
+    refute DevamsizlikKontrol.onur_adayi?(ogr(0, :mezun))
+  end
+
+  def test_rapor
+    sonuc = DevamsizlikKontrol.rapor([Ogrenci.new("Ali", 3), Ogrenci.new("Veli", 0)])
+    assert_equal({ ad: "Ali", devamsizlik: 3, riskli: true, kaldi: false, onur_adayi: false }, sonuc[0])
+    assert_equal({ ad: "Veli", devamsizlik: 0, riskli: false, kaldi: false, onur_adayi: true }, sonuc[1])
+  end
+end

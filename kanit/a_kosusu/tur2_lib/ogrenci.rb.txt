@@ -1,0 +1,21 @@
+class Ogrenci
+  DONEM_OTURUM = 10
+  DURUMLAR = %i[aktif donduruldu mezun].freeze
+
+  attr_reader :ad, :devamsizlik, :durum
+
+  def initialize(ad, devamsizlik, durum = :aktif)
+    unless devamsizlik.is_a?(Integer) && (0..DONEM_OTURUM).cover?(devamsizlik)
+      raise ArgumentError, "devamsızlık 0-#{DONEM_OTURUM} arası tam sayı olmalı"
+    end
+    raise ArgumentError, "durum #{DURUMLAR.inspect} içinden olmalı" unless DURUMLAR.include?(durum)
+
+    @ad = ad
+    @devamsizlik = devamsizlik
+    @durum = durum
+  end
+
+  DURUMLAR.each do |d|
+    define_method(:"#{d}?") { durum == d }
+  end
+end

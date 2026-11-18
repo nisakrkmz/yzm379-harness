@@ -1,0 +1,31 @@
+require_relative "ogrenci"
+
+class DevamsizlikKontrol
+  RISKLI_ESIK = 3 # %30 ve üzeri
+  KALDI_ESIK = 4  # %40 ve üzeri
+
+  def self.riskli?(ogrenci)
+    ogrenci.devamsizlik >= RISKLI_ESIK
+  end
+
+  def self.kaldi?(ogrenci)
+    ogrenci.devamsizlik >= KALDI_ESIK
+  end
+
+  # Aktif ve hiç devamsızlığı olmayan öğrenci
+  def self.onur_adayi?(ogrenci)
+    ogrenci.aktif? && ogrenci.devamsizlik.zero?
+  end
+
+  def self.rapor(ogrenciler)
+    ogrenciler.map do |o|
+      {
+        ad: o.ad,
+        devamsizlik: o.devamsizlik,
+        riskli: riskli?(o),
+        kaldi: kaldi?(o),
+        onur_adayi: onur_adayi?(o)
+      }
+    end
+  end
+end
