@@ -12,6 +12,7 @@
 
 require "open3"
 require "rbconfig"
+require "fileutils"
 
 Encoding.default_external = Encoding::UTF_8
 Encoding.default_internal = Encoding::UTF_8
@@ -68,11 +69,25 @@ else
   hatalar << "[TEST] #{test_dosyasi} bulunamadı"
 end
 
+# Kanıt: her çalışma kanit/kanca.log dosyasına bir satır yazar.
+# Claude Code hook'u CLAUDE_PROJECT_DIR değişkenini verir; elle çalıştırmada yoktur.
+def kaydet(sonuc)
+  kaynak = ENV["CLAUDE_PROJECT_DIR"] ? "kanca" : "elle"
+  FileUtils.mkdir_p("kanit")
+  File.open("kanit/kanca.log", "a:UTF-8") do |f|
+    f.puts "#{Time.now.strftime('%Y-%m-%d %H:%M:%S')} [#{kaynak}] #{sonuc}"
+  end
+rescue StandardError
+  nil
+end
+
 if hatalar.empty?
+  kaydet("TAMAM")
   puts "bin/kontrol: tamam (sürüm, sözdizimi, yasaklar, testler yeşil)"
   exit 0
 end
 
+kaydet("BAŞARISIZ: " + hatalar.map { _1.lines.first.strip }.join(" | "))
 warn "bin/kontrol BAŞARISIZ — AGENTS.md kurallarına göre düzeltmeden bitirme:"
 hatalar.each { |h| warn "- #{h}" }
 exit 2
