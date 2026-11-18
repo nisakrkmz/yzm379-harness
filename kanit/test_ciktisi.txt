@@ -1,0 +1,29 @@
+﻿ruby 3.4.12 (2026-10-23 revision 366f5fdc00) +PRISM [x64-mingw-ucrt]
+Run options: -v --seed 59201
+
+# Running:
+
+OgrenciTest#test_bilinmeyen_metot_no_method_error_firlatir = 0.00 s = .
+OgrenciTest#test_devamsizlik_araligi_disi_reddedilir = 0.00 s = .
+OgrenciTest#test_devamsizlik_sinirlari_0_ve_10_kabul_edilir = 0.00 s = .
+OgrenciTest#test_standart_siniflara_monkey_patch_yok = 0.00 s = .
+OgrenciTest#test_alanlar_okunabilir = 0.00 s = .
+OgrenciTest#test_durum_sorgulari_acik_ve_aranabilir = 0.00 s = .
+OgrenciTest#test_method_missing_tanimlanmamis = 0.00 s = .
+OgrenciTest#test_alanlar_zorunlu_varsayilan_yok = 0.00 s = .
+OgrenciTest#test_durum_sorgulari_dogru_cevap_verir = 0.00 s = .
+OgrenciTest#test_gecersiz_durum_reddedilir = 0.00 s = .
+DevamsizlikKontrolTest#test_4_devamsizlik_hem_riskli_hem_kaldi = 0.00 s = .
+DevamsizlikKontrolTest#test_aktif_olmayan_onur_adayi_olamaz = 0.00 s = .
+DevamsizlikKontrolTest#test_aktif_ve_sifir_devamsizlik_onur_adayi = 0.00 s = .
+DevamsizlikKontrolTest#test_tek_devamsizlik_onur_adayligini_bozar = 0.00 s = .
+DevamsizlikKontrolTest#test_2_devamsizlik_riskli_degil = 0.00 s = .
+DevamsizlikKontrolTest#test_kurallar_listesi = 0.00 s = .
+DevamsizlikKontrolTest#test_tam_4_devamsizlik_kaldi = 0.00 s = .
+DevamsizlikKontrolTest#test_3_ustu_riskli = 0.00 s = .
+DevamsizlikKontrolTest#test_tam_3_devamsizlik_kalmaz = 0.00 s = .
+DevamsizlikKontrolTest#test_tam_3_devamsizlik_riskli_sayilir = 0.00 s = .
+
+Finished in 0.008236s, 2428.2454 runs/s, 92758.9727 assertions/s.
+
+20 runs, 764 assertions, 0 failures, 0 errors, 0 skips

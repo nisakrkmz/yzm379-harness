@@ -6,7 +6,7 @@
 
 ```bash
 ruby -v                                   # 3.4.x
-ruby -Ilib -Itest test/ogrenci_test.rb    # Minitest
+ruby -Ilib -Itest test/ogrenci_test.rb    # Minitest: 20 test (bkz. "Testler")
 ruby bin/kontrol                          # tüm kapı: sürüm + sözdizimi + yasaklar + testler
 ```
 
@@ -21,6 +21,43 @@ DevamsizlikKontrol.new(o).kurallar        # => [:riskli]
 | `riskli?` | `devamsizlik >= 3` (10 oturumda %30) | **tam 3 → riskli** |
 | `kaldi?` | `devamsizlik >= 4` | 3 → kalmaz, 4 → kalır (ve riskli) |
 | `onur_adayi?` (özgün kural) | `aktif?` ve `devamsizlik == 0` | 0 + mezun → değil, 1 + aktif → değil |
+
+## Testler (Minitest) — durum: 🟢 YEŞİL
+
+Testlerin tamamı tek dosyada: **[`test/ogrenci_test.rb`](test/ogrenci_test.rb)** — **20 test, hepsi yeşil.**
+
+```bash
+ruby -Ilib -Itest test/ogrenci_test.rb
+```
+
+Beklenen son satır: `20 runs, … assertions, 0 failures, 0 errors, 0 skips`
+(Assertion sayısı Ruby sürümüne göre değişir; monkey patch testi standart sınıfların tüm metotlarını tarar.)
+Ruby 3.4.12 üzerindeki gerçek çıktı: **[`kanit/test_ciktisi.txt`](kanit/test_ciktisi.txt)**.
+
+| Test | Neyi kilitler | RATCHET_LOG |
+|---|---|---|
+| `test_tam_3_devamsizlik_riskli_sayilir` | **SINIR VAKA: tam 3 devamsızlık riskli** (`>= 3`) | A1-1 |
+| `test_2_devamsizlik_riskli_degil` | 2 → riskli değil | A1-1 |
+| `test_3_ustu_riskli` | 0..2 riskli değil, 3..10 riskli (tüm aralık) | A1-1 |
+| `test_tam_3_devamsizlik_kalmaz` | 3 → kalmaz | A1-2 |
+| `test_tam_4_devamsizlik_kaldi` | 4 → kaldı | A1-2 |
+| `test_4_devamsizlik_hem_riskli_hem_kaldi` | 4 → hem riskli hem kaldı | A1-2 |
+| `test_devamsizlik_sinirlari_0_ve_10_kabul_edilir` | 0 ve 10 geçerli | A1-3 |
+| `test_devamsizlik_araligi_disi_reddedilir` | −1, 11, 2.5, `"3"`, `nil` → `ArgumentError` | A1-3 |
+| `test_alanlar_okunabilir` | `ad`, `durum`, `devamsizlik` okunur | A1-4 |
+| `test_durum_sorgulari_dogru_cevap_verir` | `aktif?`, `donduruldu?`, `mezun?` doğru | A1-4 |
+| `test_durum_sorgulari_acik_ve_aranabilir` | Sorgular `define_method` ile gerçekten tanımlı (`instance_methods`, `respond_to?`) | A1-4 |
+| `test_gecersiz_durum_reddedilir` | `:silindi`, `"aktif"` → `ArgumentError` | A1-4 |
+| `test_alanlar_zorunlu_varsayilan_yok` | Üç keyword zorunlu, varsayılan yok | A2-3 |
+| `test_bilinmeyen_metot_no_method_error_firlatir` | **Bilinmeyen metot** → `NoMethodError`, `respond_to?` false | A2-2 |
+| `test_method_missing_tanimlanmamis` | `method_missing` tanımlanmamış (sahibi `BasicObject`) | Ö-1 |
+| `test_standart_siniflara_monkey_patch_yok` | `lib/` hiçbir standart sınıfa metot eklemiyor | Ö-1 |
+| `test_aktif_ve_sifir_devamsizlik_onur_adayi` | Özgün kural: aktif + 0 → onur adayı | — |
+| `test_tek_devamsizlik_onur_adayligini_bozar` | aktif + 1 → değil | — |
+| `test_aktif_olmayan_onur_adayi_olamaz` | mezun/dondurulmuş + 0 → değil | — |
+| `test_kurallar_listesi` | `kurallar` → `[]`, `[:riskli]`, `[:riskli, :kaldi]`, `[:onur_adayi]` | — |
+
+Testler ayrıca `ruby bin/kontrol` tarafından ve ajan her dosya kaydettiğinde kanca tarafından otomatik çalıştırılır (bkz. aşağıda).
 
 ## Harness
 
