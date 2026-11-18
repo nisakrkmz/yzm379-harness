@@ -35,6 +35,10 @@ k.kurallar  # => [:riskli, :kaldi, :onur_adayi] içinden geçerli olanlar, bu s�
 - Standart sınıflar (`Integer`, `String`, `Object`, …) yeniden açılamaz, dışarıdan metot eklenemez: **monkey patch YASAK**. [Ö-1]
 - Bilinmeyen metot `NoMethodError` fırlatır. [A2-2]
 
+## Araçlar
+- Dosyaları **Write/Edit aracıyla** yaz. Bash heredoc (`cat > dosya <<EOF`) ve PowerShell izinli değildir; bunlarla deneme, tur kaybıdır. Komut olarak yalnızca `ruby …` (Bash) çalıştır. [B-1]
+- İki `lib/` dosyasını arka arkaya yaz; ilk dosyadan sonraki kırmızı kanca çıktısı ara durumdur. [B-2]
+
 ## Doğrulama
 - Testler `test/ogrenci_test.rb` içindedir. **Testleri değiştirme, silme, `skip` etme.** Kod testlere uyar. [A2-1]
 - Her değişiklikten sonra `ruby bin/kontrol` çalışır (kanca bunu otomatik yapar). Çıkış kodu 2 ise **bitirme, düzelt.** [A1-5]
